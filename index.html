@@ -413,6 +413,21 @@
       display: block;
     }
 
+    .explain-title {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 850;
+    }
+
+    .explain-answer {
+      margin: 6px 0;
+    }
+
+    .explain-sentence {
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
     .actions {
       display: flex;
       gap: 10px;
@@ -1756,6 +1771,26 @@
       });
     }
 
+    function renderAnswerFeedback(q, isCorrect) {
+      const explainBox = document.getElementById("explainBox");
+      if (isCorrect) {
+        explainBox.innerHTML = `
+          <strong class="explain-title">答對了</strong>
+          <div>${q.explain}</div>
+        `;
+      } else {
+        const answerLetter = String.fromCharCode(65 + q.answer);
+        const completedSentence = q.prompt.replace("___", `<strong>${q.choices[q.answer]}</strong>`);
+        explainBox.innerHTML = `
+          <strong class="explain-title">答案解析</strong>
+          <div class="explain-answer">正確答案：<strong>${answerLetter}. ${q.choices[q.answer]}</strong></div>
+          <div>${q.explain}</div>
+          <div class="explain-sentence">完整句子：${completedSentence}</div>
+        `;
+      }
+      explainBox.classList.add("show");
+    }
+
     function answerQuestion(index) {
       if (selected) return;
       selected = true;
@@ -1772,7 +1807,7 @@
         if (choiceIndex === q.answer) button.classList.add("correct");
         if (choiceIndex === index && !isCorrect) button.classList.add("wrong");
       });
-      document.getElementById("explainBox").classList.add("show");
+      renderAnswerFeedback(q, isCorrect);
       renderStats();
     }
 
