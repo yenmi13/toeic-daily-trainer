@@ -579,10 +579,46 @@
     }
 
     .calendar-grid {
+      margin: 12px 0 16px;
+    }
+
+    .calendar-nav {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .calendar-nav strong {
+      text-align: center;
+    }
+
+    .calendar-nav .ghost:last-child {
+      justify-self: end;
+    }
+
+    .calendar-nav button:disabled {
+      cursor: not-allowed;
+      opacity: .35;
+    }
+
+    .calendar-month {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .2);
+    }
+
+    .calendar-month-title {
+      margin: 0 0 8px;
+      font-size: 15px;
+    }
+
+    .calendar-month-grid {
       display: grid;
       grid-template-columns: repeat(7, minmax(0, 1fr));
-      gap: 7px;
-      margin: 12px 0 16px;
+      gap: 5px;
     }
 
     .calendar-panel {
@@ -596,7 +632,7 @@
     }
 
     .calendar-day {
-      min-height: 62px;
+      min-height: 46px;
       border: 1px solid var(--line);
       border-radius: var(--radius);
       background: rgba(255, 255, 255, .28);
@@ -1169,10 +1205,15 @@
         <div class="panel calendar-panel" id="trainingCalendarPanel">
           <div class="section-head">
             <div>
-              <h2>2026 年 7 月｜30 天訓練日曆</h2>
-              <p>從 2026/7/1 開始；完成每日任務後，日期會自動留下紀錄。</p>
+              <h2>2026 年 7–12 月｜訓練日曆</h2>
+              <p>從 2026/7 開始一路排到 12 月；完成每日任務後，日期會自動留下紀錄。</p>
             </div>
             <button class="ghost" id="resetAllBtn" type="button">清空紀錄</button>
+          </div>
+          <div class="calendar-nav" aria-label="切換月份">
+            <button class="ghost" id="calendarPrevBtn" type="button">← 上個月</button>
+            <strong id="calendarMonthTitle" aria-live="polite">2026 / 7</strong>
+            <button class="ghost" id="calendarNextBtn" type="button">下個月 →</button>
           </div>
           <div class="calendar-grid" id="calendarGrid"></div>
         </div>
@@ -1701,6 +1742,7 @@
     let currentRewrite = Number(state.currentRewrite || 0);
     let readingAnswers = {};
     let activeMockWeek = Number(state.activeMockWeek || 1);
+    let activeCalendarMonth = Math.min(Math.max(new Date().getMonth(), 6), 11);
 
     function loadState() {
       try {
@@ -1913,32 +1955,48 @@
     }
 
     function renderPlan() {
+      renderCalendar();
+      renderReadingQuiz();
+      renderDailySummary();
+    }
+
+    function renderCalendar() {
       const completed = new Set(state.completedDays);
-      const today = dayNumber();
-      const weekdayLabels = ["日", "一", "二", "三", "四", "五", "六"]
+      const weekdayNames = ["日", "一", "二", "三", "四", "五", "六"];
+      const month = activeCalendarMonth + 1;
+      const firstWeekday = new Date(2026, activeCalendarMonth, 1).getDay();
+      const daysInMonth = new Date(2026, activeCalendarMonth + 1, 0).getDate();
+      const weekdayLabels = weekdayNames
         .map((label) => `<div class="calendar-weekday">${label}</div>`)
         .join("");
-      const firstWeekday = new Date(`${TRAINING_START_DATE}T00:00:00`).getDay();
       const emptyDays = Array.from({ length: firstWeekday }, () =>
         `<div class="calendar-day calendar-empty" aria-hidden="true"></div>`
       ).join("");
-      const trainingDays = Array.from({ length: TRAINING_DAYS }, (_, index) => {
-        const day = index + 1;
-        const date = dateForDay(day);
+      const monthDays = Array.from({ length: daysInMonth }, (_, index) => {
+        const dateNumber = index + 1;
+        const date = new Date(2026, activeCalendarMonth, dateNumber);
+        const dateKey = localDateKey(date);
         const classes = ["calendar-day"];
-        if (day === today) classes.push("today");
-        if (completed.has(date)) classes.push("done-day");
+        if (dateKey === todayKey) classes.push("today");
+        if (completed.has(dateKey)) classes.push("done-day");
+        const trainingDay = month === 7 && dateNumber <= TRAINING_DAYS
+          ? `<small>D${dateNumber}</small>`
+          : "";
         return `
-          <div class="${classes.join(" ")}" title="${date}・Day ${day}">
-            <span class="calendar-date">7/${day}</span>
-            <small>D${day}</small>
+          <div class="${classes.join(" ")}" title="${dateKey}${trainingDay ? `・Day ${dateNumber}` : ""}">
+            <span class="calendar-date">${dateNumber}</span>
+            ${trainingDay}
           </div>
         `;
       }).join("");
-      document.getElementById("calendarGrid").innerHTML = weekdayLabels + emptyDays + trainingDays;
-
-      renderReadingQuiz();
-      renderDailySummary();
+      document.getElementById("calendarMonthTitle").textContent = `2026 / ${month}`;
+      document.getElementById("calendarPrevBtn").disabled = activeCalendarMonth === 6;
+      document.getElementById("calendarNextBtn").disabled = activeCalendarMonth === 11;
+      document.getElementById("calendarGrid").innerHTML = `
+        <section class="calendar-month" aria-label="2026 年 ${month} 月">
+          <div class="calendar-month-grid">${weekdayLabels}${emptyDays}${monthDays}</div>
+        </section>
+      `;
     }
 
     function dateForDay(day) {
@@ -2235,6 +2293,16 @@
       document.getElementById("nextRewriteBtn").addEventListener("click", () => {
         currentRewrite += 1;
         renderRewrite();
+      });
+
+      document.getElementById("calendarPrevBtn").addEventListener("click", () => {
+        activeCalendarMonth = Math.max(6, activeCalendarMonth - 1);
+        renderCalendar();
+      });
+
+      document.getElementById("calendarNextBtn").addEventListener("click", () => {
+        activeCalendarMonth = Math.min(11, activeCalendarMonth + 1);
+        renderCalendar();
       });
 
       document.getElementById("completeDayBtn").addEventListener("click", () => {
