@@ -580,7 +580,7 @@
 
     .calendar-grid {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
+      grid-template-columns: repeat(7, minmax(0, 1fr));
       gap: 7px;
       margin: 12px 0 16px;
     }
@@ -596,15 +596,43 @@
     }
 
     .calendar-day {
-      min-height: 48px;
+      min-height: 62px;
       border: 1px solid var(--line);
       border-radius: var(--radius);
       background: rgba(255, 255, 255, .28);
-      display: grid;
-      place-items: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
       color: var(--muted);
       font-weight: 800;
       font-size: 13px;
+    }
+
+    .calendar-weekday {
+      padding: 4px 0;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .calendar-date {
+      color: inherit;
+      font-size: 14px;
+    }
+
+    .calendar-day small {
+      color: inherit;
+      font-size: 10px;
+      opacity: .72;
+    }
+
+    .calendar-day.calendar-empty {
+      min-height: 0;
+      border: 0;
+      background: transparent;
     }
 
     .calendar-day.today {
@@ -1141,8 +1169,8 @@
         <div class="panel calendar-panel" id="trainingCalendarPanel">
           <div class="section-head">
             <div>
-              <h2>30 天訓練日曆</h2>
-              <p>最底部進度檢查。上面都做完，再來看自己走到哪。</p>
+              <h2>2026 年 7 月｜30 天訓練日曆</h2>
+              <p>從 2026/7/1 開始；完成每日任務後，日期會自動留下紀錄。</p>
             </div>
             <button class="ghost" id="resetAllBtn" type="button">清空紀錄</button>
           </div>
@@ -1178,7 +1206,17 @@
 
   <script>
     const STORAGE_KEY = "yenmi_toeic800_daily_trainer_v1";
-    const todayKey = new Date().toISOString().slice(0, 10);
+    const TRAINING_START_DATE = "2026-07-01";
+    const TRAINING_DAYS = 30;
+
+    function localDateKey(date = new Date()) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      return `${year}-${month}-${day}`;
+    }
+
+    const todayKey = localDateKey();
 
     function buildQuestions() {
       const banks = [
@@ -1677,7 +1715,7 @@
     }
 
     function ensureState() {
-      state.startedAt ||= todayKey;
+      state.startedAt = TRAINING_START_DATE;
       state.completedDays ||= [];
       state.answered ||= 0;
       state.correct ||= 0;
@@ -1697,7 +1735,7 @@
       const start = new Date(state.startedAt + "T00:00:00");
       const now = new Date(todayKey + "T00:00:00");
       const diff = Math.round((now - start) / 86400000) + 1;
-      return Math.min(Math.max(diff, 1), 30);
+      return Math.min(Math.max(diff, 1), TRAINING_DAYS);
     }
 
     function renderMissions() {
@@ -1877,14 +1915,27 @@
     function renderPlan() {
       const completed = new Set(state.completedDays);
       const today = dayNumber();
-      document.getElementById("calendarGrid").innerHTML = Array.from({ length: 30 }, (_, index) => {
+      const weekdayLabels = ["日", "一", "二", "三", "四", "五", "六"]
+        .map((label) => `<div class="calendar-weekday">${label}</div>`)
+        .join("");
+      const firstWeekday = new Date(`${TRAINING_START_DATE}T00:00:00`).getDay();
+      const emptyDays = Array.from({ length: firstWeekday }, () =>
+        `<div class="calendar-day calendar-empty" aria-hidden="true"></div>`
+      ).join("");
+      const trainingDays = Array.from({ length: TRAINING_DAYS }, (_, index) => {
         const day = index + 1;
         const date = dateForDay(day);
         const classes = ["calendar-day"];
         if (day === today) classes.push("today");
         if (completed.has(date)) classes.push("done-day");
-        return `<div class="${classes.join(" ")}">D${day}</div>`;
+        return `
+          <div class="${classes.join(" ")}" title="${date}・Day ${day}">
+            <span class="calendar-date">7/${day}</span>
+            <small>D${day}</small>
+          </div>
+        `;
       }).join("");
+      document.getElementById("calendarGrid").innerHTML = weekdayLabels + emptyDays + trainingDays;
 
       renderReadingQuiz();
       renderDailySummary();
@@ -1893,7 +1944,7 @@
     function dateForDay(day) {
       const date = new Date(state.startedAt + "T00:00:00");
       date.setDate(date.getDate() + day - 1);
-      return date.toISOString().slice(0, 10);
+      return localDateKey(date);
     }
 
     function renderReadingQuiz() {
