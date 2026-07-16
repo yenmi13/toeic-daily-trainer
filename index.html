@@ -188,7 +188,7 @@
 
     .mission-list {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 7px;
       margin: 0;
       padding: 0;
@@ -207,6 +207,27 @@
       border-radius: var(--radius);
       font-size: 13px;
       line-height: 1.2;
+    }
+
+    .mission-list li.done {
+      border-color: rgba(24, 115, 71, .5);
+      background: rgba(24, 115, 71, .12);
+    }
+
+    .mission-list li.done .check {
+      border-color: var(--green);
+      background: var(--green);
+      color: #ffffff;
+    }
+
+    .mission-gate {
+      padding: 9px 10px;
+      border: 1px solid rgba(232, 50, 42, .4);
+      border-radius: var(--radius);
+      background: rgba(232, 50, 42, .08);
+      color: #8f211d;
+      font-size: 12px;
+      line-height: 1.45;
     }
 
     .check {
@@ -324,6 +345,11 @@
       border-color: var(--green);
       color: #fafaf8;
       box-shadow: 0 9px 0 rgba(24, 115, 71, .2);
+    }
+
+    .primary[aria-disabled="true"] {
+      background: #77776f;
+      cursor: not-allowed;
     }
 
     .question {
@@ -515,6 +541,39 @@
       margin: 0;
       color: #cfcfc9;
       line-height: 1.6;
+    }
+
+    .word-quiz-panel {
+      grid-column: 1 / -1;
+    }
+
+    .compact-head {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    #wordLibraryList {
+      max-height: 260px;
+      overflow: auto;
+      margin-top: 12px;
+    }
+
+    .word-quiz-result {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: var(--radius);
+      line-height: 1.55;
+    }
+
+    .word-quiz-result.correct {
+      background: rgba(24, 115, 71, .12);
+      color: var(--green);
+    }
+
+    .word-quiz-result.wrong {
+      background: rgba(232, 50, 42, .1);
+      color: #8f211d;
     }
 
     .translation {
@@ -1033,7 +1092,7 @@
 <body>
   <main class="app">
     <header class="topbar">
-      <div class="pill">TOEIC 700 / 30 天</div>
+      <div class="pill">TOEIC 600–990 / 30 天</div>
       <div class="pill" id="todayPill">Day 1 / 30</div>
     </header>
 
@@ -1043,23 +1102,24 @@
           <div class="score" id="scoreNow">600</div>
           <div class="score-meta">
             <span>目前估計</span>
-            <strong>目標 700</strong>
-            <span id="bankCount">150 題庫</span>
+            <strong>訓練範圍 600–990</strong>
+            <span id="bankCount">1,000 題庫</span>
           </div>
         </div>
         <div class="progress-shell">
           <div class="progress-meta">
             <span>目前估計 600</span>
-            <span>30 天目標 700</span>
+            <span>30 天持續進步</span>
           </div>
           <div class="progress" aria-label="TOEIC score progress">
             <span id="scoreProgress"></span>
           </div>
         </div>
         <aside class="mission" id="dailyMissionPanel">
-          <h2>今日 10 分鐘任務</h2>
+          <h2>今日必修任務</h2>
           <ul class="mission-list" id="missionList"></ul>
           <button class="primary" id="completeDayBtn" type="button">完成今天</button>
+          <div class="mission-gate" id="missionGate" role="status" hidden></div>
         </aside>
       </div>
     </section>
@@ -1078,7 +1138,7 @@
           <div class="section-head">
             <div>
               <h2>今日快測</h2>
-              <p>150 題 Part 5 題庫，先練你剛剛錯的猶豫型文法。</p>
+              <p>1,000 題 Reading 題庫：Part 5、Part 6、Part 7，難度涵蓋 600–990 挑戰帶。</p>
             </div>
             <button class="ghost" id="resetQuizBtn" type="button">重抽</button>
           </div>
@@ -1113,6 +1173,10 @@
           <div>
             <div class="pos" id="wordPos">n.</div>
             <div class="word" id="wordText">Forecast</div>
+            <div class="tag-row" style="margin-top: 10px;">
+              <span class="tag" id="wordBand">600–695</span>
+              <span class="tag" id="wordTopic">報表</span>
+            </div>
           </div>
           <div>
             <p id="wordExample">The forecast shows steady growth.</p>
@@ -1124,18 +1188,41 @@
           <div class="actions">
             <button class="primary" id="flipWordBtn" type="button">翻牌</button>
             <button class="ghost" id="nextWordBtn" type="button">下一張</button>
+            <button class="ghost" id="saveWordBtn" type="button">存入字庫</button>
           </div>
         </div>
 
         <aside class="panel" id="phrasePanel">
           <div class="section-head">
             <div>
-              <h2>今日商務搭配</h2>
-              <p>不要只背單字，背它在句子裡怎麼活。</p>
+              <h2>我的商務字庫</h2>
+              <p><span id="wordLibraryCount">0</span> 張待複習；存下容易忘的字，別靠緣分重逢。</p>
+            </div>
+          </div>
+          <div class="actions">
+            <button class="primary" id="reviewWordsBtn" type="button">複習字庫</button>
+            <button class="ghost" id="startWordQuizBtn" type="button">字卡測驗</button>
+          </div>
+          <ul class="card-list" id="wordLibraryList"></ul>
+          <div class="section-head compact-head">
+            <div>
+              <h3>今日商務搭配</h3>
+              <p>單字要和搭配一起活著。</p>
             </div>
           </div>
           <ul class="card-list" id="phraseList"></ul>
         </aside>
+
+        <div class="panel word-quiz-panel" id="wordQuizPanel" hidden>
+          <div class="section-head">
+            <div>
+              <h2>商務字卡測驗</h2>
+              <p id="wordQuizMeta">從 300 張字卡抽題；字庫有內容時優先考待複習單字。</p>
+            </div>
+            <button class="ghost" id="closeWordQuizBtn" type="button">關閉測驗</button>
+          </div>
+          <div id="wordQuizBox"></div>
+        </div>
       </div>
     </section>
 
@@ -1150,9 +1237,9 @@
           </div>
           <div class="rewrite">
             <div class="tag-row">
-              <span class="tag">Growth</span>
-              <span class="tag">AI workflow</span>
-              <span class="tag">Email</span>
+              <span class="tag" id="rewriteCategory">Email</span>
+              <span class="tag" id="rewriteBand">600–695</span>
+              <span class="tag">100 題庫</span>
             </div>
             <p class="prompt" id="rewritePrompt"></p>
             <textarea id="rewriteInput" placeholder="先自己寫英文，不用完美；送出後會顯示修正重點與修正版。"></textarea>
@@ -1245,6 +1332,7 @@
     </section>
   </main>
 
+  <script src="./TOEIC_Trainer_Data_20260717.js"></script>
   <script>
     const STORAGE_KEY = "yenmi_toeic800_daily_trainer_v1";
     const TRAINING_START_DATE = "2026-07-01";
@@ -1536,15 +1624,15 @@
       }).slice(0, 150);
     }
 
-    const questions = buildQuestions();
+    const questions = window.TOEIC_DATA?.questions || buildQuestions();
     const mockConfigs = [
-      { week: 1, day: 7, total: 25, minutes: 20 },
-      { week: 2, day: 14, total: 40, minutes: 32 },
-      { week: 3, day: 21, total: 60, minutes: 48 },
+      { week: 1, day: 7, total: 100, minutes: 75 },
+      { week: 2, day: 14, total: 100, minutes: 75 },
+      { week: 3, day: 21, total: 100, minutes: 75 },
       { week: 4, day: 30, total: 100, minutes: 75 }
     ];
 
-    const words = [
+    const words = window.TOEIC_DATA?.words || [
       ["Forecast", "n.", "預測", "The forecast shows steady growth.", "forecast 常出現在 sales forecast, revenue forecast, demand forecast。"],
       ["Projection", "n.", "預估", "The projection includes labor costs.", "projection 比 forecast 更像模型估算，常跟 budget、cost、revenue 一起出現。"],
       ["Revenue", "n.", "營收", "Revenue increased after the campaign.", "報告句：Revenue increased/decreased by X% quarter over quarter."],
@@ -1619,7 +1707,7 @@
       ["ensure compliance with", "The team must ensure compliance with the new policy."]
     ];
 
-    const rewrites = [
+    const rewrites = window.TOEIC_DATA?.rewrites || [
       {
         prompt: "請用英文說：我負責幫客戶制定策略、管理廣告，並用 AI 重新設計工作流程。",
         answer: "I develop strategy plans for clients, manage ad campaigns, and use AI to redesign marketing workflows."
@@ -1743,6 +1831,10 @@
     let readingAnswers = {};
     let activeMockWeek = Number(state.activeMockWeek || 1);
     let activeCalendarMonth = Math.min(Math.max(new Date().getMonth(), 6), 11);
+    let wordReviewMode = false;
+    let wordReviewCursor = 0;
+    let currentWordQuiz = null;
+    let wordQuizLocked = false;
 
     function loadState() {
       try {
@@ -1767,10 +1859,36 @@
       state.mockScores ||= {};
       state.mockResults ||= {};
       state.mockAnswers ||= {};
+      state.daily ||= {};
+      state.wordLibrary ||= [];
       state.score ||= 600;
       state.currentWord ||= 0;
       state.currentRewrite ||= 0;
       saveState();
+    }
+
+    function todayProgress() {
+      state.daily[todayKey] ||= {
+        drillAnswered: 0,
+        drillCorrect: 0,
+        wordStudied: [],
+        rewriteCompleted: false,
+        rewriteScore: 0,
+        rewritePrompt: "",
+        wordQuizAnswered: 0,
+        wordQuizCorrect: 0,
+        wrongTypes: {}
+      };
+      return state.daily[todayKey];
+    }
+
+    function missionStatus() {
+      const daily = todayProgress();
+      return {
+        drill: daily.drillAnswered >= 10,
+        words: daily.wordStudied.length >= 3,
+        rewrite: daily.rewriteCompleted
+      };
     }
 
     function dayNumber() {
@@ -1781,27 +1899,47 @@
     }
 
     function renderMissions() {
+      const daily = todayProgress();
+      const status = missionStatus();
       const missions = [
-        ["5 題快測", "3 min"],
-        ["3 張商務字卡", "2 min"],
-        ["1 句工作英文", "3 min"],
-        ["錯題看一次", "2 min"]
+        ["10 題快測", `${Math.min(daily.drillAnswered, 10)}/10`, status.drill],
+        ["3 張商務字卡", `${Math.min(daily.wordStudied.length, 3)}/3`, status.words],
+        ["1 句工作英文", `${daily.rewriteCompleted ? 1 : 0}/1`, status.rewrite]
       ];
       document.getElementById("missionList").innerHTML = missions.map((item, index) => `
-        <li>
-          <span class="check">${index + 1}</span>
+        <li class="${item[2] ? "done" : ""}">
+          <span class="check">${item[2] ? "✓" : index + 1}</span>
           <span>${item[0]}</span>
           <span class="minutes">${item[1]}</span>
         </li>
       `).join("");
+      const allDone = Object.values(status).every(Boolean);
+      const completeButton = document.getElementById("completeDayBtn");
+      const doneToday = (state.completedDays || []).includes(todayKey);
+      const gate = document.getElementById("missionGate");
+      if (!doneToday) {
+        completeButton.setAttribute("aria-disabled", String(!allDone));
+        completeButton.disabled = !allDone;
+        completeButton.textContent = allDone ? "完成今天" : "完成必修後打卡";
+        const missing = [
+          !status.drill ? "10 題快測" : "",
+          !status.words ? "3 張商務字卡" : "",
+          !status.rewrite ? "1 句工作英文" : ""
+        ].filter(Boolean);
+        gate.hidden = allDone;
+        gate.textContent = allDone ? "" : `尚未完成：${missing.join("、")}。`;
+      } else {
+        completeButton.disabled = true;
+        gate.hidden = true;
+      }
     }
 
     function renderStats() {
       const accuracy = state.answered ? Math.round((state.correct / state.answered) * 100) : 0;
       const completed = new Set(state.completedDays);
-      const scoreGain = Math.min(100, completed.size * 3 + Math.floor(state.correct / 5));
-      state.score = Math.min(700, 600 + scoreGain);
-      const progress = ((state.score - 600) / 100) * 100;
+      const scoreGain = Math.min(390, completed.size * 5 + Math.floor(state.correct / 10) * 5);
+      state.score = Math.min(990, 600 + scoreGain);
+      const progress = ((state.score - 600) / 390) * 100;
 
       document.getElementById("todayPill").textContent = `Day ${dayNumber()} / 30`;
       document.getElementById("bankCount").textContent = `${questions.length} 題庫`;
@@ -1815,6 +1953,7 @@
       const doneToday = completed.has(todayKey);
       completeButton.textContent = doneToday ? "今天已完成" : "完成今天";
       completeButton.classList.toggle("complete", doneToday);
+      if (doneToday) completeButton.setAttribute("aria-disabled", "false");
 
       const weakEntries = Object.entries(state.weakness).sort((a, b) => b[1] - a[1]).slice(0, 4);
       document.getElementById("weakList").innerHTML = weakEntries.length
@@ -1823,6 +1962,7 @@
       if (document.getElementById("dailySummary")) {
         renderDailySummary();
       }
+      renderMissions();
       saveState();
     }
 
@@ -1833,7 +1973,9 @@
         <div class="tag-row">
           <span class="tag">${q.level}</span>
           <span class="tag">${q.type}</span>
+          <span class="tag">${q.band || "600–990"}</span>
         </div>
+        ${q.passage ? `<div class="reading-passage">${q.passage.replaceAll("\n", "<br>")}</div>` : ""}
         <p class="prompt">${q.prompt}</p>
         <div class="choices">
           ${q.choices.map((choice, index) => `
@@ -1860,12 +2002,14 @@
         `;
       } else {
         const answerLetter = String.fromCharCode(65 + q.answer);
-        const completedSentence = q.prompt.replace("___", `<strong>${q.choices[q.answer]}</strong>`);
+        const completedSentence = q.prompt.includes("___")
+          ? q.prompt.replace("___", `<strong>${q.choices[q.answer]}</strong>`)
+          : "";
         explainBox.innerHTML = `
           <strong class="explain-title">答案解析</strong>
           <div class="explain-answer">正確答案：<strong>${answerLetter}. ${q.choices[q.answer]}</strong></div>
           <div>${q.explain}</div>
-          <div class="explain-sentence">完整句子：${completedSentence}</div>
+          ${completedSentence ? `<div class="explain-sentence">完整句子：${completedSentence}</div>` : ""}
         `;
       }
       explainBox.classList.add("show");
@@ -1876,11 +2020,15 @@
       selected = true;
       const q = questions[currentQuestion % questions.length];
       const isCorrect = index === q.answer;
+      const daily = todayProgress();
       state.answered += 1;
+      daily.drillAnswered += 1;
       if (isCorrect) {
         state.correct += 1;
+        daily.drillCorrect += 1;
       } else {
         state.weakness[q.type] = (state.weakness[q.type] || 0) + 1;
+        daily.wrongTypes[q.type] = (daily.wrongTypes[q.type] || 0) + 1;
       }
       document.querySelectorAll(".choice").forEach((button) => {
         const choiceIndex = Number(button.dataset.choice);
@@ -1891,24 +2039,169 @@
       renderStats();
     }
 
+    function normalizeWord(raw, index) {
+      if (!Array.isArray(raw)) return raw;
+      return {
+        id: `legacy-${index}`,
+        term: raw[0],
+        pos: raw[1],
+        zh: raw[2],
+        example: raw[3],
+        tip: raw[4],
+        collocation: raw[0],
+        topic: "商務",
+        band: "600–990"
+      };
+    }
+
+    function activeWordIndex() {
+      if (!wordReviewMode || !state.wordLibrary.length) return currentWord % words.length;
+      const savedId = state.wordLibrary[wordReviewCursor % state.wordLibrary.length];
+      const savedIndex = words.findIndex((item, index) => normalizeWord(item, index).id === savedId);
+      return savedIndex >= 0 ? savedIndex : currentWord % words.length;
+    }
+
+    function getActiveWord() {
+      const index = activeWordIndex();
+      return normalizeWord(words[index], index);
+    }
+
     function renderWord() {
-      const word = words[currentWord % words.length];
-      document.getElementById("wordText").textContent = word[0];
-      document.getElementById("wordPos").textContent = word[1];
-      document.getElementById("wordZh").textContent = word[2];
-      document.getElementById("wordExample").textContent = word[3];
-      document.getElementById("wordTip").textContent = word[4];
+      const word = getActiveWord();
+      document.getElementById("wordText").textContent = word.term;
+      document.getElementById("wordPos").textContent = word.pos;
+      document.getElementById("wordZh").textContent = word.zh;
+      document.getElementById("wordExample").textContent = word.example;
+      document.getElementById("wordTip").textContent = word.tip;
+      document.getElementById("wordBand").textContent = word.band || "600–990";
+      document.getElementById("wordTopic").textContent = word.topic || "商務";
       document.getElementById("translation").classList.remove("show");
+      const isSaved = state.wordLibrary.includes(word.id);
+      document.getElementById("saveWordBtn").textContent = isSaved ? "已存入字庫" : "存入字庫";
+      document.getElementById("reviewWordsBtn").textContent = wordReviewMode ? "離開複習" : "複習字庫";
       document.getElementById("phraseList").innerHTML = phrases.map((phrase) => `
         <li><strong>${phrase[0]}</strong><br>${phrase[1]}</li>
       `).join("");
       state.currentWord = currentWord;
+      renderWordLibrary();
+      saveState();
+    }
+
+    function markWordStudied() {
+      const word = getActiveWord();
+      const daily = todayProgress();
+      if (!daily.wordStudied.includes(word.id)) daily.wordStudied.push(word.id);
+      renderMissions();
+      saveState();
+    }
+
+    function toggleSavedWord() {
+      const word = getActiveWord();
+      const index = state.wordLibrary.indexOf(word.id);
+      if (index >= 0) state.wordLibrary.splice(index, 1);
+      else state.wordLibrary.push(word.id);
+      if (!state.wordLibrary.length) wordReviewMode = false;
+      renderWord();
+    }
+
+    function renderWordLibrary() {
+      const savedWords = state.wordLibrary.map((id) => {
+        const index = words.findIndex((item, itemIndex) => normalizeWord(item, itemIndex).id === id);
+        return index >= 0 ? normalizeWord(words[index], index) : null;
+      }).filter(Boolean);
+      document.getElementById("wordLibraryCount").textContent = savedWords.length;
+      document.getElementById("reviewWordsBtn").disabled = !savedWords.length;
+      document.getElementById("wordLibraryList").innerHTML = savedWords.length
+        ? savedWords.slice(0, 20).map((word) => `<li><strong>${word.term}</strong><br>${word.zh}・${word.topic}</li>`).join("")
+        : `<li><strong>字庫還是空的</strong><br>看到容易忘的字，就按「存入字庫」。</li>`;
+    }
+
+    function toggleWordReviewMode() {
+      if (!state.wordLibrary.length) return;
+      wordReviewMode = !wordReviewMode;
+      wordReviewCursor = 0;
+      renderWord();
+    }
+
+    function createWordQuiz() {
+      const libraryWords = state.wordLibrary.map((id) => {
+        const index = words.findIndex((item, itemIndex) => normalizeWord(item, itemIndex).id === id);
+        return index >= 0 ? normalizeWord(words[index], index) : null;
+      }).filter(Boolean);
+      const sourcePool = libraryWords.length ? libraryWords : words.map(normalizeWord);
+      const target = sourcePool[Math.floor(Math.random() * sourcePool.length)];
+      const distractorPool = words.map(normalizeWord).filter((word) => word.id !== target.id && word.zh !== target.zh);
+      const distractors = [];
+      while (distractors.length < 3 && distractorPool.length) {
+        const pick = distractorPool.splice(Math.floor(Math.random() * distractorPool.length), 1)[0];
+        if (!distractors.some((word) => word.zh === pick.zh)) distractors.push(pick);
+      }
+      const correctIndex = Math.floor(Math.random() * 4);
+      const options = distractors.map((word) => word.zh);
+      options.splice(correctIndex, 0, target.zh);
+      currentWordQuiz = { target, options, answer: correctIndex };
+      wordQuizLocked = false;
+    }
+
+    function renderWordQuiz() {
+      if (!currentWordQuiz) createWordQuiz();
+      const quiz = currentWordQuiz;
+      const daily = todayProgress();
+      document.getElementById("wordQuizMeta").textContent = `今日測驗 ${daily.wordQuizCorrect}/${daily.wordQuizAnswered}；字庫有內容時優先抽待複習字。`;
+      document.getElementById("wordQuizBox").innerHTML = `
+        <div class="tag-row">
+          <span class="tag">${quiz.target.band}</span>
+          <span class="tag">${quiz.target.topic}</span>
+        </div>
+        <p class="prompt">「${quiz.target.term}」最接近哪個意思？</p>
+        <div class="choices">
+          ${quiz.options.map((option, index) => `
+            <button class="choice" type="button" data-word-quiz-choice="${index}">
+              <span class="letter">${String.fromCharCode(65 + index)}</span>
+              <span>${option}</span>
+            </button>
+          `).join("")}
+        </div>
+        <div id="wordQuizResult"></div>
+        <div class="actions"><button class="primary" id="nextWordQuizBtn" type="button">下一題</button></div>
+      `;
+      document.querySelectorAll("[data-word-quiz-choice]").forEach((button) => {
+        button.addEventListener("click", () => answerWordQuiz(Number(button.dataset.wordQuizChoice)));
+      });
+      document.getElementById("nextWordQuizBtn").addEventListener("click", () => {
+        createWordQuiz();
+        renderWordQuiz();
+      });
+    }
+
+    function answerWordQuiz(choice) {
+      if (wordQuizLocked) return;
+      wordQuizLocked = true;
+      const quiz = currentWordQuiz;
+      const isCorrect = choice === quiz.answer;
+      const daily = todayProgress();
+      daily.wordQuizAnswered += 1;
+      if (isCorrect) daily.wordQuizCorrect += 1;
+      document.querySelectorAll("[data-word-quiz-choice]").forEach((button) => {
+        const index = Number(button.dataset.wordQuizChoice);
+        if (index === quiz.answer) button.classList.add("correct");
+        if (index === choice && !isCorrect) button.classList.add("wrong");
+      });
+      document.getElementById("wordQuizResult").innerHTML = `
+        <div class="word-quiz-result ${isCorrect ? "correct" : "wrong"}">
+          <strong>${isCorrect ? "答對了" : `正確答案：${quiz.target.zh}`}</strong><br>
+          ${quiz.target.example}<br>${quiz.target.tip}
+        </div>
+      `;
+      document.getElementById("wordQuizMeta").textContent = `今日測驗 ${daily.wordQuizCorrect}/${daily.wordQuizAnswered}`;
       saveState();
     }
 
     function renderRewrite() {
       const item = rewrites[currentRewrite % rewrites.length];
       document.getElementById("rewritePrompt").textContent = item.prompt;
+      document.getElementById("rewriteCategory").textContent = item.category || "工作英文";
+      document.getElementById("rewriteBand").textContent = item.band || "600–990";
       document.getElementById("rewriteInput").value = "";
       document.getElementById("rewriteAnswer").classList.remove("show");
       document.getElementById("rewriteAnswer").innerHTML = "";
@@ -1921,7 +2214,19 @@
       const lower = text.toLowerCase();
       const notes = [];
       if (!text) {
-        notes.push("先自己寫一句，再看修正版；這樣才知道你卡在哪。");
+        return {
+          score: 0,
+          verdict: "尚未作答",
+          notes: ["先自己寫一句，再看修正版；空白不能偷渡成完成。"],
+          revised: target.answer,
+          pattern: target.pattern || "Situation + action + result."
+        };
+      }
+      const keywordGroups = target.keywords || [];
+      const matchedGroups = keywordGroups.filter((group) => group.some((keyword) => lower.includes(keyword.toLowerCase())));
+      const coverage = keywordGroups.length ? matchedGroups.length / keywordGroups.length : 1;
+      if (coverage < 1) {
+        notes.push(`內容還少 ${keywordGroups.length - matchedGroups.length} 個關鍵概念；先補齊人物、動作、期限或結果。`);
       }
       if (/\bstrategy plan\b/i.test(text)) {
         notes.push("`strategy plan` 可以，但職場英文更常寫 `strategy plans` 或 `strategic plans`。");
@@ -1935,8 +2240,11 @@
       if (/\bresponsible to\b/i.test(text)) {
         notes.push("負責某事用 `responsible for`，不是 `responsible to`。");
       }
-      if (/\bads\b/.test(text) === false && lower.includes("ad")) {
+      if (/\bads\b/i.test(text) === false && /\bads?\b/i.test(text) && /\bADs\b/.test(text)) {
         notes.push("一般句子裡用 `ads` 或 `ad campaigns`，不用全大寫 `ADs`。");
+      }
+      if (!/^[A-Z]/.test(text)) {
+        notes.push("句首要大寫；這是小錯，但正式信件很顯眼。");
       }
       if (text && !/[.!?]$/.test(text)) {
         notes.push("句尾補上句點，商務英文看起來會穩很多。");
@@ -1944,13 +2252,23 @@
       if (text.split(/\s+/).length < 8 && text) {
         notes.push("可以多補一個動作或成果，讓句子更像工作英文，而不是單字清單。");
       }
+      const politeCategory = ["Email", "禮貌催件", "會議邀請"].includes(target.category);
+      if (politeCategory && !/\b(please|could|would|appreciate|kindly)\b/i.test(text)) {
+        notes.push("這題是商務溝通，補上 please、could 或 would，語氣會比較安全。");
+      }
+      const mechanics = (/^[A-Z]/.test(text) ? 10 : 0) + (/[.!?]$/.test(text) ? 10 : 0);
+      const lengthScore = text.split(/\s+/).length >= 8 ? 10 : 4;
+      const toneScore = !politeCategory || /\b(please|could|would|appreciate|kindly)\b/i.test(text) ? 10 : 4;
+      const score = Math.round(coverage * 60 + mechanics + lengthScore + toneScore);
       if (!notes.length) {
-        notes.push("主要意思清楚；下一步是讓動詞更精準、句子更自然。");
+        notes.push("主要資訊、文法外觀與商務語氣都到位；這個版本可以直接用。");
       }
       return {
+        score,
+        verdict: score >= 90 ? "可直接使用" : score >= 75 ? "意思完整，稍微潤稿" : score >= 60 ? "基本可懂，仍需修正" : "關鍵內容不足",
         notes,
         revised: target.answer,
-        pattern: "I + action verb + object + context/result."
+        pattern: target.pattern || "Situation + action + result."
       };
     }
 
@@ -2066,32 +2384,34 @@
         return;
       }
       summaryPanel.hidden = false;
+      const daily = todayProgress();
       const reading = state.readingResults[todayKey];
       const readingText = reading ? `${reading.correct}/${reading.total}` : "0/3";
-      const accuracy = state.answered ? Math.round((state.correct / state.answered) * 100) : 0;
-      const weakEntries = Object.entries(state.weakness).sort((a, b) => b[1] - a[1]);
+      const accuracy = daily.drillAnswered ? Math.round((daily.drillCorrect / daily.drillAnswered) * 100) : 0;
+      const weakEntries = Object.entries(daily.wrongTypes || {}).sort((a, b) => b[1] - a[1]);
       const topWeakness = weakEntries[0]?.[0] || "尚未累積";
       const readingDone = Boolean(reading);
-      const part5Status = state.answered ? `已答 ${state.answered} 題` : "尚未作答";
+      const drillStatus = `${daily.drillCorrect}/${daily.drillAnswered} 題正確`;
+      const wordStatus = `已學 ${daily.wordStudied.length} 張字卡`;
+      const rewriteStatus = daily.rewriteCompleted ? `工作英文 ${daily.rewriteScore} 分` : "工作英文尚未完成";
       const readingStatus = readingDone ? `短文 ${readingText}` : "短文尚未作答";
       const reviewStatus = state.review.length ? `${state.review.length} 題待複習` : "尚無複習題";
       const tomorrowFocus = topWeakness === "尚未累積"
-        ? "先做 5 題 Part 5，再補 1 篇短文。"
-        : `先重刷 ${topWeakness} 類型，再做 1 篇短文。`;
-      const qualityNote = readingDone
-        ? "今天已完成打卡。明天從弱點類型開始，不用重新想順序。"
-        : "今天已完成打卡；短文如果還沒做，明天先補 Part 7 抓重點。";
+        ? "明天繼續完成 10 題快測，並從字庫抽 3 張複習。"
+        : `明天先重刷 ${topWeakness}，再做字庫複習。`;
       document.getElementById("dailySummary").innerHTML = `
-        <div class="summary-item"><strong>${state.answered}</strong><span>Part 5 已答</span></div>
-        <div class="summary-item"><strong>${accuracy}%</strong><span>Part 5 正確率</span></div>
-        <div class="summary-item"><strong>${readingText}</strong><span>短文問答</span></div>
-        <div class="summary-item"><strong>${state.review.length}</strong><span>複習題</span></div>
+        <div class="summary-item"><strong>${daily.drillAnswered}</strong><span>今日快測</span></div>
+        <div class="summary-item"><strong>${accuracy}%</strong><span>快測正確率</span></div>
+        <div class="summary-item"><strong>${daily.wordStudied.length}</strong><span>已學字卡</span></div>
+        <div class="summary-item"><strong>${daily.wordQuizCorrect}/${daily.wordQuizAnswered}</strong><span>字卡測驗</span></div>
+        <div class="summary-item"><strong>${daily.rewriteScore}</strong><span>工作英文評分</span></div>
+        <div class="summary-item"><strong>${state.wordLibrary.length}</strong><span>字庫待複習</span></div>
       `;
       document.getElementById("dailyAdvice").innerHTML = `
-        <li><strong>今日完成</strong><br>${part5Status}；${readingStatus}；${reviewStatus}。</li>
+        <li><strong>今日完成</strong><br>${drillStatus}；${wordStatus}；${rewriteStatus}。</li>
+        <li><strong>額外練習</strong><br>${readingStatus}；${reviewStatus}；字卡測驗 ${daily.wordQuizCorrect}/${daily.wordQuizAnswered}。</li>
         <li><strong>明天優先</strong><br>${tomorrowFocus}</li>
-        <li><strong>收工判斷</strong><br>${qualityNote}</li>
-        <li><strong>週測位置</strong><br>每 7 天做一次 Reading 模考，去「週測」分頁。這裡不含聽力，所以不估完整 TOEIC 總分。</li>
+        <li><strong>週測位置</strong><br>每週做 100 題 Reading 模考：Part 5 30 題、Part 6 16 題、Part 7 54 題。</li>
       `;
     }
 
@@ -2147,27 +2467,15 @@
 
     function buildMockQuestions(week) {
       const config = mockConfigs.find((item) => item.week === week) || mockConfigs[0];
-      const part7Target = Math.min(Math.ceil(config.total * 0.3), 30);
-      const part5Target = config.total - part7Target;
-      const part5Items = Array.from({ length: part5Target }, (_, index) => {
-        const source = questions[(index + (week - 1) * 31) % questions.length];
-        return { ...source, mockType: "Part 5" };
-      });
-      const part7Pool = readingSets.flatMap((set) => {
-        return set.questions.map((question) => ({
-          level: "Part 7",
-          type: "短文閱讀",
-          prompt: `${set.passage}\n\n${question[0]}`,
-          choices: question[1],
-          answer: question[2],
-          explain: "先抓短文的時間、原因、動作與責任人。這是 TOEIC Reading 長文題的基本肌肉。",
-          mockType: "Part 7"
-        }));
-      });
-      const part7Items = Array.from({ length: part7Target }, (_, index) => {
-        return part7Pool[(index + (week - 1) * 7) % part7Pool.length];
-      });
-      return [...part5Items, ...part7Items].slice(0, config.total);
+      const pick = (pool, count, offset) => Array.from({ length: count }, (_, index) => pool[(index + offset) % pool.length]);
+      const part5Pool = questions.filter((question) => question.level === "Part 5");
+      const part6Pool = questions.filter((question) => question.level === "Part 6");
+      const part7Pool = questions.filter((question) => question.level === "Part 7");
+      return [
+        ...pick(part5Pool, 30, (week - 1) * 30),
+        ...pick(part6Pool, 16, (week - 1) * 16),
+        ...pick(part7Pool, 54, (week - 1) * 54)
+      ].slice(0, config.total);
     }
 
     function renderActiveMock() {
@@ -2189,7 +2497,9 @@
                 <div class="tag-row">
                   <span class="tag">${question.level}</span>
                   <span class="tag">${question.type}</span>
+                  <span class="tag">${question.band || "600–990"}</span>
                 </div>
+                ${question.passage ? `<div class="reading-passage">${question.passage.replaceAll("\n", "<br>")}</div>` : ""}
                 <p>${qIndex + 1}. ${question.prompt}</p>
                 <div class="mini-options">
                   ${question.choices.map((choice, choiceIndex) => {
@@ -2268,12 +2578,26 @@
       });
 
       document.getElementById("flipWordBtn").addEventListener("click", () => {
-        document.getElementById("translation").classList.toggle("show");
+        const translation = document.getElementById("translation");
+        translation.classList.toggle("show");
+        if (translation.classList.contains("show")) markWordStudied();
       });
 
       document.getElementById("nextWordBtn").addEventListener("click", () => {
-        currentWord += 1;
+        if (wordReviewMode) wordReviewCursor += 1;
+        else currentWord += 1;
         renderWord();
+      });
+
+      document.getElementById("saveWordBtn").addEventListener("click", toggleSavedWord);
+      document.getElementById("reviewWordsBtn").addEventListener("click", toggleWordReviewMode);
+      document.getElementById("startWordQuizBtn").addEventListener("click", () => {
+        document.getElementById("wordQuizPanel").hidden = false;
+        createWordQuiz();
+        renderWordQuiz();
+      });
+      document.getElementById("closeWordQuizBtn").addEventListener("click", () => {
+        document.getElementById("wordQuizPanel").hidden = true;
       });
 
       document.getElementById("showRewriteBtn").addEventListener("click", () => {
@@ -2282,12 +2606,21 @@
         const feedback = analyzeRewrite(input, item);
         const answerBox = document.getElementById("rewriteAnswer");
         answerBox.innerHTML = `
+          <div class="summary-item full"><strong>${feedback.score}</strong><span>${feedback.verdict}</span></div>
           <strong>修正重點</strong>
           <ul>${feedback.notes.map((note) => `<li>${note}</li>`).join("")}</ul>
           <strong>修正版</strong><br>${feedback.revised}
           <br><br><strong>可套用句型</strong><br>${feedback.pattern}
         `;
         answerBox.classList.add("show");
+        if (input.trim()) {
+          const daily = todayProgress();
+          daily.rewriteCompleted = true;
+          daily.rewriteScore = feedback.score;
+          daily.rewritePrompt = item.prompt;
+          renderMissions();
+          saveState();
+        }
       });
 
       document.getElementById("nextRewriteBtn").addEventListener("click", () => {
@@ -2306,6 +2639,19 @@
       });
 
       document.getElementById("completeDayBtn").addEventListener("click", () => {
+        const status = missionStatus();
+        const missing = [];
+        if (!status.drill) missing.push("10 題快測");
+        if (!status.words) missing.push("3 張商務字卡");
+        if (!status.rewrite) missing.push("1 句工作英文");
+        const gate = document.getElementById("missionGate");
+        if (missing.length) {
+          gate.hidden = false;
+          gate.textContent = `還不能收工：請先完成 ${missing.join("、")}。`;
+          activateTab(!status.drill ? "drill" : !status.words ? "words" : "work");
+          return;
+        }
+        gate.hidden = true;
         if (!state.completedDays.includes(todayKey)) {
           state.completedDays.push(todayKey);
         }
