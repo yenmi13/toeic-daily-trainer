@@ -1999,6 +1999,9 @@
     function renderQuestion() {
       selected = false;
       const q = questions[drillDeck[currentQuestion]];
+      const nextQuestionButton = document.getElementById("nextQuestionBtn");
+      nextQuestionButton.disabled = true;
+      nextQuestionButton.textContent = "請先作答";
       document.getElementById("quizBox").innerHTML = `
         <div class="tag-row">
           <span class="tag">${q.level}</span>
@@ -2065,6 +2068,9 @@
         if (choiceIndex === index && !isCorrect) button.classList.add("wrong");
       });
       renderAnswerFeedback(q, isCorrect);
+      const nextQuestionButton = document.getElementById("nextQuestionBtn");
+      nextQuestionButton.disabled = false;
+      nextQuestionButton.textContent = "下一題";
       renderStats();
     }
 
@@ -2105,6 +2111,9 @@
       document.getElementById("wordBand").textContent = word.band || "600–990";
       document.getElementById("wordTopic").textContent = word.topic || "商務";
       document.getElementById("translation").classList.remove("show");
+      const nextWordButton = document.getElementById("nextWordBtn");
+      nextWordButton.disabled = true;
+      nextWordButton.textContent = "先翻牌";
       const isSaved = state.wordLibrary.includes(word.id);
       document.getElementById("saveWordBtn").textContent = isSaved ? "已存入字庫" : "存入字庫";
       document.getElementById("reviewWordsBtn").textContent = wordReviewMode ? "離開複習" : "複習字庫";
@@ -2616,7 +2625,12 @@
       document.getElementById("flipWordBtn").addEventListener("click", () => {
         const translation = document.getElementById("translation");
         translation.classList.toggle("show");
-        if (translation.classList.contains("show")) markWordStudied();
+        if (translation.classList.contains("show")) {
+          markWordStudied();
+          const nextWordButton = document.getElementById("nextWordBtn");
+          nextWordButton.disabled = false;
+          nextWordButton.textContent = "下一張";
+        }
       });
 
       document.getElementById("nextWordBtn").addEventListener("click", () => {
