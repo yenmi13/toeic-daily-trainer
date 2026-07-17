@@ -1823,7 +1823,37 @@
       }
     ];
 
+    function shuffle(items) {
+      const shuffled = [...items];
+      for (let index = shuffled.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+      }
+      return shuffled;
+    }
+
+    // 原始題庫依 Part、模板與情境批次排列；不能直接用 index + 1，否則會連續出現
+    // 同一題型的換字版本。牌組在洗牌時刻意拉開相同「Part + 題型」。
+    function buildDrillDeck(questionBank, recentQuestions = []) {
+      const remaining = shuffle(questionBank.map((question, index) => ({ question, index })));
+      const deck = [];
+      const history = recentQuestions.filter(Boolean).slice(-8);
+      const keyFor = (question) => `${question.level}::${question.type}`;
+
+      while (remaining.length) {
+        const recentKeys = new Set(history.slice(-5).map(keyFor));
+        const candidateIndex = remaining.findIndex(({ question }) => !recentKeys.has(keyFor(question)));
+        // 題庫尾端可能只剩同類題，這時才放寬限制，確保不會卡住。
+        const pickIndex = candidateIndex === -1 ? 0 : candidateIndex;
+        const [next] = remaining.splice(pickIndex, 1);
+        deck.push(next.index);
+        history.push(next.question);
+      }
+      return deck;
+    }
+
     const state = loadState();
+    let drillDeck = buildDrillDeck(questions);
     let currentQuestion = 0;
     let selected = false;
     let currentWord = Number(state.currentWord || 0);
@@ -1968,7 +1998,7 @@
 
     function renderQuestion() {
       selected = false;
-      const q = questions[currentQuestion % questions.length];
+      const q = questions[drillDeck[currentQuestion]];
       document.getElementById("quizBox").innerHTML = `
         <div class="tag-row">
           <span class="tag">${q.level}</span>
@@ -2018,7 +2048,7 @@
     function answerQuestion(index) {
       if (selected) return;
       selected = true;
-      const q = questions[currentQuestion % questions.length];
+      const q = questions[drillDeck[currentQuestion]];
       const isCorrect = index === q.answer;
       const daily = todayProgress();
       state.answered += 1;
@@ -2562,17 +2592,24 @@
       });
 
       document.getElementById("nextQuestionBtn").addEventListener("click", () => {
+        const previousQuestion = questions[drillDeck[currentQuestion]];
         currentQuestion += 1;
+        if (currentQuestion >= drillDeck.length) {
+          drillDeck = buildDrillDeck(questions, [previousQuestion]);
+          currentQuestion = 0;
+        }
         renderQuestion();
       });
 
       document.getElementById("resetQuizBtn").addEventListener("click", () => {
-        currentQuestion = Math.floor(Math.random() * questions.length);
+        const previousQuestion = questions[drillDeck[currentQuestion]];
+        drillDeck = buildDrillDeck(questions, [previousQuestion]);
+        currentQuestion = 0;
         renderQuestion();
       });
 
       document.getElementById("markReviewBtn").addEventListener("click", () => {
-        const q = questions[currentQuestion % questions.length];
+        const q = questions[drillDeck[currentQuestion]];
         if (!state.review.includes(q.prompt)) state.review.push(q.prompt);
         renderStats();
       });
